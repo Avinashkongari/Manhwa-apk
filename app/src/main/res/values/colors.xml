@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="axion_obsidian">#FF090A0F</color>
+    <color name="axion_charcoal">#FF11131C</color>
+    <color name="axion_violet">#FF7C5CFF</color>
+    <color name="axion_cyan">#FF38BDF8</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

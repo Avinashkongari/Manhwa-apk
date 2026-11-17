@@ -1,0 +1,6 @@
+{
+  "name": "AXION Manga Downloader",
+  "description": "In-app WebView browser for Thunder Scans with automatic chapter page detection, duplicate filtering, sequential 3-digit numbering, and streaming ZIP archiving to Downloads.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
