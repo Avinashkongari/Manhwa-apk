@@ -40,38 +40,142 @@ object ChapterPageDetector {
     val CHAPTER_DETECTION_JS: String = """
         (function() {
             try {
-                function pickUrl(img) {
-                    var attrs = ['data-src', 'data-lazy-src', 'data-original', 'data-cfsrc', 'data-url'];
-                    for (var i = 0; i < attrs.length; i++) {
-                        var v = img.getAttribute(attrs[i]);
-                        if (v && v.trim() && !isPlaceholder(v)) return v.trim();
-                    }
-                    var cs = img.currentSrc || img.getAttribute('src') || '';
-                    if (cs && !isPlaceholder(cs)) return cs.trim();
-                    var srcset = img.getAttribute('srcset') || '';
-                    if (srcset) {
-                        var first = srcset.split(',')[0].trim().split(' ')[0];
-                        if (first && !isPlaceholder(first)) return first;
+                function cleanUrl(u) {
+                    if (!u) return '';
+                    return String(u).replace(/[\r\n\t]+/g, '').trim();
+                }
+
+                function isPlaceholder(u) {
+                    var l = cleanUrl(u).toLowerCase();
+                    if (!l) return true;
+                    if (l.indexOf('data:image') === 0) return true;
+                    if (l.indexOf('blob:') === 0) return true;
+                    if (l.indexOf('javascript:') === 0) return true;
+                    if (/(loading|spinner|blank|spacer|loader|placeholder|lazy-load|dflazy)\.(gif|png|svg|jpg|webp)(\?|#|$)/i.test(l)) return true;
+                    return false;
+                }
+
+                function pickFirstSrcsetUrl(srcset) {
+                    if (!srcset) return '';
+                    var parts = String(srcset).split(',');
+                    for (var i = 0; i < parts.length; i++) {
+                        var candidate = cleanUrl(parts[i]).split(/\s+/)[0];
+                        if (candidate && !isPlaceholder(candidate)) return candidate;
                     }
                     return '';
                 }
 
-                function isPlaceholder(u) {
-                    var l = u.toLowerCase();
-                    if (l.indexOf('data:image') === 0) return true;
-                    if (l.indexOf('javascript:') === 0) return true;
-                    if (l.indexOf('loading.gif') !== -1 || l.indexOf('spinner') !== -1 || l.indexOf('blank.gif') !== -1 || l.indexOf('spacer') !== -1) return true;
+                function pickUrl(img) {
+                    var lazyAttrs = [
+                        'data-src',
+                        'data-lazy-src',
+                        'data-original',
+                        'data-cfsrc',
+                        'data-url',
+                        'data-ll-src',
+                        'data-echo',
+                        'data-image',
+                        'data-full-url'
+                    ];
+                    for (var i = 0; i < lazyAttrs.length; i++) {
+                        var v = cleanUrl(img.getAttribute(lazyAttrs[i]));
+                        if (v && !isPlaceholder(v)) {
+                            return { url: v, fromLazy: true };
+                        }
+                    }
+                    var dataSrcset = pickFirstSrcsetUrl(img.getAttribute('data-srcset') || img.getAttribute('data-lazy-srcset'));
+                    if (dataSrcset) {
+                        return { url: dataSrcset, fromLazy: true };
+                    }
+                    var parent = img.parentElement;
+                    if (parent && parent.tagName && parent.tagName.toLowerCase() === 'picture') {
+                        var sources = parent.querySelectorAll('source');
+                        for (var p = 0; p < sources.length; p++) {
+                            var sUrl = pickFirstSrcsetUrl(sources[p].getAttribute('data-srcset') || sources[p].getAttribute('srcset'));
+                            if (sUrl) return { url: sUrl, fromLazy: true };
+                        }
+                    }
+                    var cs = cleanUrl(img.currentSrc || img.getAttribute('src') || '');
+                    if (cs && !isPlaceholder(cs)) {
+                        return { url: cs, fromLazy: false };
+                    }
+                    var srcset = pickFirstSrcsetUrl(img.getAttribute('srcset'));
+                    if (srcset) {
+                        return { url: srcset, fromLazy: false };
+                    }
+                    return { url: '', fromLazy: false };
+                }
+
+                var excludedTokens = {
+                    'sidebar': true,
+                    'main-sidebar': true,
+                    'widget': true,
+                    'widget-area': true,
+                    'comments': true,
+                    'comments-area': true,
+                    'comment-list': true,
+                    'comment-respond': true,
+                    'disqus_thread': true,
+                    'related-posts': true,
+                    'related-manga': true,
+                    'recommended': true,
+                    'popular-manga': true,
+                    'site-header': true,
+                    'site-footer': true,
+                    'main-header': true,
+                    'main-footer': true,
+                    'c-header': true,
+                    'c-sub-header-nav': true,
+                    'navbar': true,
+                    'nav-menu': true,
+                    'social-share': true,
+                    'share-buttons': true,
+                    'ads': true,
+                    'advert': true,
+                    'advertisement': true,
+                    'ad-container': true,
+                    'ad-banner': true,
+                    'ad-wrapper': true,
+                    'banner-ad': true,
+                    'popup': true,
+                    'modal': true,
+                    'author-box': true,
+                    'footer-wrapper': true
+                };
+
+                function hasExcludedToken(str) {
+                    if (!str) return false;
+                    var tokens = String(str).toLowerCase().trim().split(/\s+/);
+                    for (var i = 0; i < tokens.length; i++) {
+                        var t = tokens[i];
+                        if (!t) continue;
+                        if (excludedTokens[t]) return true;
+                        if (t.indexOf('ad-') === 0 || t.indexOf('ads-') === 0 || t.indexOf('widget_') === 0) return true;
+                    }
                     return false;
                 }
 
-                function hasExcludedAncestor(el) {
-                    var cur = el;
+                function hasExcludedAncestor(el, isDedicatedReader) {
+                    var cur = el.parentElement;
                     while (cur && cur.tagName) {
                         var tag = cur.tagName.toLowerCase();
+                        // Never inspect <body> or <html> (WordPress/Madara adds classes like header-style-1, no-sidebar there)
+                        if (tag === 'body' || tag === 'html') return false;
                         if (tag === 'header' || tag === 'footer' || tag === 'nav' || tag === 'aside') return true;
-                        var cls = (typeof cur.className === 'string' ? cur.className : '') + ' ' + (cur.id || '');
-                        var low = cls.toLowerCase();
-                        if (/\b(sidebar|widget|comment|comments|related|recommend|popular|footer|header|navbar|menu|social|share|ad-|ads|advert|banner|popup|modal|avatar|author-box)\b/.test(low)) {
+                        // Stop once we reach a known reader container root
+                        var clsStr = typeof cur.className === 'string' ? cur.className : '';
+                        var idStr = cur.id || '';
+                        if (isDedicatedReader) {
+                            var lowRoot = (clsStr + ' ' + idStr).toLowerCase();
+                            if (lowRoot.indexOf('reading-content') !== -1 ||
+                                lowRoot.indexOf('readerarea') !== -1 ||
+                                lowRoot.indexOf('chapter-content') !== -1 ||
+                                lowRoot.indexOf('chapter-images') !== -1 ||
+                                lowRoot.indexOf('container-chapter-reader') !== -1) {
+                                return false;
+                            }
+                        }
+                        if (hasExcludedToken(clsStr) || hasExcludedToken(idStr)) {
                             return true;
                         }
                         cur = cur.parentElement;
@@ -79,43 +183,51 @@ object ChapterPageDetector {
                     return false;
                 }
 
-                function isExcludedUrlOrMeta(url, img) {
+                function isExcludedUrlOrMeta(url, img, isDedicatedReader) {
                     var low = url.toLowerCase();
                     if (low.indexOf('http://') !== 0 && low.indexOf('https://') !== 0) return true;
-                    if (/(\.svg|\.gif)(\?|#|$)/i.test(low)) return true;
-                    if (/(logo|favicon|avatar|gravatar|wp-emoji|emoji|discord|patreon|ko-fi|kofi|paypal|banner|advert|doubleclick|googlesyndication|badge|icon-|\/icons\/|thumb-|thumbnail|cover-small|1x1)/i.test(low)) return true;
-                    var cls = ((typeof img.className === 'string' ? img.className : '') + ' ' + (img.id || '') + ' ' + (img.alt || '')).toLowerCase();
-                    if (/(logo|avatar|emoji|icon|banner|advert|thumbnail|wp-post-image)/i.test(cls)) return true;
+                    if (/(\.svg|\.ico)(\?|#|$)/i.test(low)) return true;
+                    if (/(doubleclick|googlesyndication|googleadservices|adservice|adserver|gravatar\.com|wp-emoji|\/emoji\/|favicon|1x1\.)/i.test(low)) return true;
+                    if (!isDedicatedReader) {
+                        if (/(logo|discord|patreon|ko-fi|kofi|paypal|\/icons\/|cover-small)/i.test(low)) return true;
+                        var imgClsId = ((typeof img.className === 'string' ? img.className : '') + ' ' + (img.id || '')).toLowerCase();
+                        if (/\b(custom-logo|site-logo|avatar|gravatar|emoji|wp-post-image)\b/.test(imgClsId)) return true;
+                    }
                     return false;
                 }
 
-                function collectFromNodes(nodeList, strictSize) {
+                function collectFromNodes(nodeList, strictSize, isDedicatedReader) {
                     var out = [];
                     var excluded = 0;
                     var seen = {};
                     for (var i = 0; i < nodeList.length; i++) {
                         var img = nodeList[i];
-                        if (hasExcludedAncestor(img)) { excluded++; continue; }
-                        var rawUrl = pickUrl(img);
-                        if (!rawUrl) { excluded++; continue; }
-                        var absUrl = rawUrl;
-                        try { absUrl = new URL(rawUrl, window.location.href).href; } catch (e) {}
-                        if (isExcludedUrlOrMeta(absUrl, img)) { excluded++; continue; }
+                        if (hasExcludedAncestor(img, isDedicatedReader)) { excluded++; continue; }
+                        var picked = pickUrl(img);
+                        if (!picked.url) { excluded++; continue; }
+                        var absUrl = picked.url;
+                        try { absUrl = new URL(picked.url, window.location.href).href; } catch (e) {}
+                        if (isExcludedUrlOrMeta(absUrl, img, isDedicatedReader)) { excluded++; continue; }
 
                         var nw = img.naturalWidth || 0;
                         var nh = img.naturalHeight || 0;
                         var cw = img.clientWidth || 0;
                         var ch = img.clientHeight || 0;
-                        var w = nw > 0 ? nw : cw;
-                        var h = nh > 0 ? nh : ch;
+                        var currentSrcClean = cleanUrl(img.currentSrc || '');
+                        var isUnloadedLazy = picked.fromLazy && (!currentSrcClean || currentSrcClean !== absUrl);
 
-                        if (strictSize && w > 0 && h > 0 && (w < 180 || h < 180)) {
-                            excluded++;
-                            continue;
-                        }
-                        if (nw > 0 && nh > 0 && (nw < 150 || nh < 150)) {
-                            excluded++;
-                            continue;
+                        // Only enforce pixel size filtering when the actual target image (not a 1x1 lazy placeholder) is loaded
+                        if (!isUnloadedLazy) {
+                            var w = nw > 0 ? nw : cw;
+                            var h = nh > 0 ? nh : ch;
+                            if (strictSize && w > 0 && h > 0 && (w < 180 || h < 180)) {
+                                excluded++;
+                                continue;
+                            }
+                            if (nw > 0 && nh > 0 && (nw < 120 || nh < 120)) {
+                                excluded++;
+                                continue;
+                            }
                         }
 
                         var normKey = absUrl.split('#')[0];
@@ -124,8 +236,8 @@ object ChapterPageDetector {
 
                         out.push({
                             url: absUrl,
-                            width: nw > 0 ? nw : cw,
-                            height: nh > 0 ? nh : ch,
+                            width: isUnloadedLazy ? 0 : (nw > 0 ? nw : cw),
+                            height: isUnloadedLazy ? 0 : (nh > 0 ? nh : ch),
                             alt: (img.alt || '').substring(0, 80)
                         });
                     }
@@ -133,16 +245,20 @@ object ChapterPageDetector {
                 }
 
                 var readerSelectors = [
-                    '#readerarea img',
+                    '.reading-content img.wp-manga-chapter-img',
+                    '.reading-content .page-break img',
                     '.reading-content img',
+                    '.page-break img',
+                    'img.wp-manga-chapter-img',
+                    '#readerarea img',
                     '.chapter-content img',
                     '.chapter-images img',
                     '.container-chapter-reader img',
                     '#chapter-content img',
-                    '.page-break img',
-                    'img.wp-manga-chapter-img',
+                    '.read-content img',
                     'div[id*="reader"] img',
                     'div[class*="reader"] img',
+                    'div[class*="reading-content"] img',
                     'div[id*="chapter"] img',
                     'div[class*="chapter-img"] img',
                     'article .entry-content img'
@@ -152,19 +268,24 @@ object ChapterPageDetector {
                 for (var s = 0; s < readerSelectors.length; s++) {
                     var nodes = document.querySelectorAll(readerSelectors[s]);
                     if (nodes && nodes.length > 0) {
-                        var res = collectFromNodes(nodes, false);
-                        if (res.images.length >= 2 || (res.images.length === 1 && best.images.length === 0)) {
-                            if (res.images.length > best.images.length) {
-                                best = res;
-                            }
-                            if (res.images.length >= 3) break;
+                        var res = collectFromNodes(nodes, false, true);
+                        if (res.images.length > best.images.length) {
+                            best = res;
                         }
+                        if (best.images.length >= 3) break;
+                    }
+                }
+
+                if (best.images.length === 0) {
+                    var mainImgs = document.querySelectorAll('main img, article img');
+                    if (mainImgs && mainImgs.length > 0) {
+                        best = collectFromNodes(mainImgs, true, false);
                     }
                 }
 
                 if (best.images.length === 0) {
                     var allImgs = document.querySelectorAll('img');
-                    best = collectFromNodes(allImgs, true);
+                    best = collectFromNodes(allImgs, true, false);
                 }
 
                 var mangaName = '';

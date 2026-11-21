@@ -448,6 +448,10 @@ class ChapterDownloadWorker(
         val tmpFile = File(tempDir, "raw_${index}.tmp")
         if (tmpFile.exists()) tmpFile.delete()
 
+        val imageCookie = runCatching {
+            CookieManager.getInstance().getCookie(imageUrl).orEmpty()
+        }.getOrDefault("").ifBlank { cookie }
+
         val requestBuilder = Request.Builder()
             .url(imageUrl)
             .header("Referer", refererUrl)
@@ -455,8 +459,8 @@ class ChapterDownloadWorker(
         if (userAgent.isNotBlank()) {
             requestBuilder.header("User-Agent", userAgent)
         }
-        if (cookie.isNotBlank()) {
-            requestBuilder.header("Cookie", cookie)
+        if (imageCookie.isNotBlank()) {
+            requestBuilder.header("Cookie", imageCookie)
         }
 
         return try {

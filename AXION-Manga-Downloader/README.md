@@ -21,7 +21,7 @@
 
 - **Application Name**: AXION Manga Downloader
 - **Package Name (`applicationId`)**: `com.aistudio.axionmanga.krxvmz`
-- **Current Version**: `1.1.1` (`versionCode: 3`)
+- **Current Version**: `1.1.2` (`versionCode: 4`)
 - **Minimum Android Version**: Android 7.0 (API 24) — designed and optimized for Android 8.0 (API 26) and higher (Target SDK 36)
 - **Target GitHub Repository**: `https://github.com/Avinashkongari/Manhwa-apk`
 - **APK Path**: `AXION-Manga-Downloader/APK/AXION-Manga-Downloader.apk`
