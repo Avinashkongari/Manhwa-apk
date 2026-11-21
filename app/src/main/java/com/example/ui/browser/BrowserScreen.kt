@@ -219,10 +219,97 @@ fun BrowserScreen(
                 tonalElevation = 2.dp
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
+                    // Top Upper Center Source Switcher (Thunder Scans <-> ManhwaHub)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp)
+                            .padding(top = 6.dp, bottom = 2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                val thunderSelected = uiState.activeSource == MangaSource.THUNDER_SCANS
+                                val manhwaHubSelected = uiState.activeSource == MangaSource.MANHWA_HUB
+
+                                Surface(
+                                    onClick = { viewModel.selectSource(MangaSource.THUNDER_SCANS, webView) },
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = if (thunderSelected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        Color.Transparent
+                                    },
+                                    contentColor = if (thunderSelected) {
+                                        Color.White
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    modifier = Modifier
+                                        .height(48.dp)
+                                        .testTag("source_thunder_button")
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        Text(
+                                            text = "Thunder Scans",
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    onClick = { viewModel.selectSource(MangaSource.MANHWA_HUB, webView) },
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = if (manhwaHubSelected) {
+                                        MaterialTheme.colorScheme.secondary
+                                    } else {
+                                        Color.Transparent
+                                    },
+                                    contentColor = if (manhwaHubSelected) {
+                                        MaterialTheme.colorScheme.onSecondary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    modifier = Modifier
+                                        .height(48.dp)
+                                        .testTag("browser_source_switch_button")
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.SwapHoriz,
+                                            contentDescription = "Switch to ManhwaHub",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = "ManhwaHub",
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
@@ -363,54 +450,6 @@ fun BrowserScreen(
                     },
                     modifier = Modifier.fillMaxSize()
                 )
-
-                // Top-Right Corner Source Switch Button (Thunder Scans <-> ManhwaHub)
-                val targetSource = uiState.activeSource.next()
-                val isManhwaHubActive = uiState.activeSource == MangaSource.MANHWA_HUB
-                Surface(
-                    onClick = { viewModel.switchSource(webView) },
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (isManhwaHubActive) {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
-                    } else {
-                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.95f)
-                    },
-                    contentColor = if (isManhwaHubActive) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSecondaryContainer
-                    },
-                    border = BorderStroke(
-                        width = 1.dp,
-                        color = if (isManhwaHubActive) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                        } else {
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
-                        }
-                    ),
-                    shadowElevation = 6.dp,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 10.dp, end = 12.dp)
-                        .minimumInteractiveComponentSize()
-                        .testTag("browser_source_switch_button")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.SwapHoriz,
-                            contentDescription = "Switch to ${targetSource.displayName}",
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Text(
-                            text = targetSource.shortLabel,
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                }
 
                 // Network Error Overlay
                 androidx.compose.animation.AnimatedVisibility(

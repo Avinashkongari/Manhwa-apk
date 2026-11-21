@@ -6,7 +6,7 @@
 
 ## Main Features
 
-- **In-App WebView Browser with Corner Source Switch**: Browse Thunder Scans directly inside the app and tap the top-right corner switch button (`ManhwaHub` / `Thunder`) at any time to instantly switch between `https://en-thunderscans.com/` and `https://manhwahub.to/`. Includes JavaScript support, zoom controls, session/cookie preservation across tabs, Back/Forward/Refresh/Home controls, loading progress indicator, and network error recovery.
+- **In-App WebView Browser with Top-Center Source Switcher**: Browse Thunder Scans directly inside the app and tap the top-center **Thunder Scans / ManhwaHub** switch pill above the website view to instantly switch between `https://en-thunderscans.com/` and `https://manhwahub.to/`. Includes JavaScript support, zoom controls, session/cookie preservation across tabs, Back/Forward/Refresh/Home controls, loading progress indicator, and network error recovery.
 - **Automatic Chapter Page Detection**: Inspects loaded, authorized chapter pages on both Thunder Scans and ManhwaHub in reading order while filtering out navigation icons, logos, avatars, ads, and unrelated thumbnails, with an interactive review sheet before downloading.
 - **Sequential 3-Digit Numbering**: Saves pages in original reading order as `001.jpg`, `002.jpg`, `003.jpg`, etc., validating `JPG`, `JPEG`, `PNG`, and `WebP` image headers.
 - **Streaming SHA-256 Duplicate Detection**: Skips byte-identical duplicate assets while preserving distinct chapter pages (including separate pages with repeated panels) and reports skipped duplicates.
@@ -21,7 +21,7 @@
 
 - **Application Name**: AXION Manga Downloader
 - **Package Name (`applicationId`)**: `com.aistudio.axionmanga.krxvmz`
-- **Current Version**: `1.1.0` (`versionCode: 2`)
+- **Current Version**: `1.1.1` (`versionCode: 3`)
 - **Minimum Android Version**: Android 7.0 (API 24) — designed and optimized for Android 8.0 (API 26) and higher (Target SDK 36)
 - **Target GitHub Repository**: `https://github.com/Avinashkongari/Manhwa-apk`
 - **APK Path**: `AXION-Manga-Downloader/APK/AXION-Manga-Downloader.apk`
@@ -38,4 +38,4 @@
 1. Open your device's **Files** app or browser downloads and tap `AXION-Manga-Downloader.apk`.
 2. If prompted, enable **Install unknown apps** for your browser or file manager in Android Settings.
 3. Tap **Install** and confirm when installation finishes.
-4. Launch **AXION Manga Downloader** from your app drawer, browse Thunder Scans or tap the top-right corner switch button to open ManhwaHub (`https://manhwahub.to/`), open any chapter, and tap **Download Chapter** to save your chapter ZIP.
+4. Launch **AXION Manga Downloader** from your app drawer, browse Thunder Scans or tap **ManhwaHub** in the top-center switcher (`https://manhwahub.to/`), open any chapter, and tap **Download Chapter** to save your chapter ZIP.

@@ -117,19 +117,22 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun switchSource(webView: WebView?) {
-        val nextSource = _uiState.value.activeSource.next()
+        selectSource(_uiState.value.activeSource.next(), webView)
+    }
+
+    fun selectSource(source: MangaSource, webView: WebView?) {
         _uiState.update {
             it.copy(
-                activeSource = nextSource,
-                currentUrl = nextSource.homeUrl,
-                pageTitle = nextSource.displayName,
+                activeSource = source,
+                currentUrl = source.homeUrl,
+                pageTitle = source.displayName,
                 isLoading = true,
                 loadingProgress = 10,
                 networkError = null
             )
         }
         webView?.stopLoading()
-        webView?.loadUrl(nextSource.homeUrl)
+        webView?.loadUrl(source.homeUrl)
     }
 
     fun onProgressChanged(progress: Int, canBack: Boolean, canForward: Boolean) {
