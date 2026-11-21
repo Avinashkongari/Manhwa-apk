@@ -43,6 +43,7 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -323,7 +324,7 @@ fun BrowserScreen(
                         IconButton(
                             onClick = {
                                 viewModel.clearError()
-                                webView.loadUrl(BrowserUiState.HOME_URL)
+                                webView.loadUrl(uiState.activeSource.homeUrl)
                             },
                             modifier = Modifier
                                 .minimumInteractiveComponentSize()
@@ -331,7 +332,7 @@ fun BrowserScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Home,
-                                contentDescription = "Home"
+                                contentDescription = "Home (${uiState.activeSource.displayName})"
                             )
                         }
                     }
@@ -362,6 +363,54 @@ fun BrowserScreen(
                     },
                     modifier = Modifier.fillMaxSize()
                 )
+
+                // Top-Right Corner Source Switch Button (Thunder Scans <-> ManhwaHub)
+                val targetSource = uiState.activeSource.next()
+                val isManhwaHubActive = uiState.activeSource == MangaSource.MANHWA_HUB
+                Surface(
+                    onClick = { viewModel.switchSource(webView) },
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isManhwaHubActive) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
+                    } else {
+                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.95f)
+                    },
+                    contentColor = if (isManhwaHubActive) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    },
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = if (isManhwaHubActive) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                        } else {
+                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+                        }
+                    ),
+                    shadowElevation = 6.dp,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 10.dp, end = 12.dp)
+                        .minimumInteractiveComponentSize()
+                        .testTag("browser_source_switch_button")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.SwapHoriz,
+                            contentDescription = "Switch to ${targetSource.displayName}",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = targetSource.shortLabel,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
 
                 // Network Error Overlay
                 androidx.compose.animation.AnimatedVisibility(
@@ -422,7 +471,7 @@ fun BrowserScreen(
                                     OutlinedButton(
                                         onClick = {
                                             viewModel.clearError()
-                                            webView.loadUrl(BrowserUiState.HOME_URL)
+                                            webView.loadUrl(uiState.activeSource.homeUrl)
                                         },
                                         modifier = Modifier
                                             .weight(1f)

@@ -136,10 +136,15 @@ object ChapterPageDetector {
                     '#readerarea img',
                     '.reading-content img',
                     '.chapter-content img',
+                    '.chapter-images img',
+                    '.container-chapter-reader img',
+                    '#chapter-content img',
                     '.page-break img',
                     'img.wp-manga-chapter-img',
                     'div[id*="reader"] img',
                     'div[class*="reader"] img',
+                    'div[id*="chapter"] img',
+                    'div[class*="chapter-img"] img',
                     'article .entry-content img'
                 ];
 
@@ -163,12 +168,12 @@ object ChapterPageDetector {
                 }
 
                 var mangaName = '';
-                var breadcrumbLinks = document.querySelectorAll('.breadcrumb a, .ts-breadcrumb a, nav[aria-label*="breadcrumb"] a');
+                var breadcrumbLinks = document.querySelectorAll('.breadcrumb a, .ts-breadcrumb a, ol.breadcrumb a, nav[aria-label*="breadcrumb"] a');
                 if (breadcrumbLinks && breadcrumbLinks.length >= 2) {
                     mangaName = (breadcrumbLinks[breadcrumbLinks.length - 1].textContent || '').trim();
                 }
                 if (!mangaName) {
-                    var seriesLink = document.querySelector('.allc a, .chapter-info a, a[href*="/manga/"], a[href*="/series/"]');
+                    var seriesLink = document.querySelector('.allc a, .chapter-info a, a[href*="/manga/"], a[href*="/manhwa/"], a[href*="/webtoon/"], a[href*="/series/"]');
                     if (seriesLink) mangaName = (seriesLink.textContent || '').trim();
                 }
 
@@ -291,6 +296,7 @@ object ChapterPageDetector {
     ): Triple<String, String, String> {
         val rawHeading = h1Text.ifBlank { pageTitle }
             .replace(Regex("\\s*[-|–—]\\s*Thunder\\s*Scans.*$", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\s*[-|–—]\\s*Manhwa\\s*Hub.*$", RegexOption.IGNORE_CASE), "")
             .replace(Regex("\\s*[-|–—]\\s*Read\\s+Online.*$", RegexOption.IGNORE_CASE), "")
             .trim()
 
@@ -315,6 +321,7 @@ object ChapterPageDetector {
 
         val derivedManga = explicitManga
             .replace(Regex("\\s*[-|–—]\\s*Thunder\\s*Scans.*$", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\s*[-|–—]\\s*Manhwa\\s*Hub.*$", RegexOption.IGNORE_CASE), "")
             .trim()
             .ifBlank {
                 rawHeading
@@ -336,10 +343,20 @@ object ChapterPageDetector {
 
     private fun deriveMangaFromUrl(pageUrl: String): String {
         return runCatching {
-            val path = URI(pageUrl).path.trim('/')
-            val seg = path.split('/').lastOrNull { it.isNotBlank() }.orEmpty()
-            seg.replace(Regex("-chapter-.*$", RegexOption.IGNORE_CASE), "")
+            val segments = URI(pageUrl).path.trim('/').split('/').filter { it.isNotBlank() }
+            if (segments.isEmpty()) return@runCatching ""
+            val ignoredCategories = setOf("webtoon", "manga", "manhwa", "series", "comic", "comics", "read", "title")
+            val lastSeg = segments.last()
+            val candidateSeg = if (
+                Regex("^(?:chapter|ch)[-_]?[0-9]+(?:\\.[0-9]+)?$", RegexOption.IGNORE_CASE).matches(lastSeg)
+            ) {
+                segments.dropLast(1).lastOrNull { it.lowercase() !in ignoredCategories }.orEmpty()
+            } else {
+                lastSeg.replace(Regex("-chapter-.*$", RegexOption.IGNORE_CASE), "")
+            }
+            candidateSeg
                 .replace('-', ' ')
+                .replace('_', ' ')
                 .split(' ')
                 .filter { it.isNotBlank() }
                 .joinToString(" ") { word ->

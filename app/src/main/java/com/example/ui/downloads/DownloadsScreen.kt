@@ -136,7 +136,7 @@ fun DownloadsScreen(
                             style = MaterialTheme.typography.titleLarge
                         )
                         Text(
-                            text = "Browse Thunder Scans, open any Manga or Manhwa chapter, and tap Download Chapter to build a sequential ZIP archive.",
+                            text = "Browse Thunder Scans or switch to ManhwaHub, open any Manga or Manhwa chapter, and tap Download Chapter to build a sequential ZIP archive.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -148,7 +148,7 @@ fun DownloadsScreen(
                                 .height(48.dp)
                                 .testTag("empty_downloads_browser_btn")
                         ) {
-                            Text("Open Thunder Scans Browser")
+                            Text("Open Manga Browser")
                         }
                     }
                 }

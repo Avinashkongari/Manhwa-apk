@@ -95,4 +95,47 @@ class AxionPipelineTest {
         val name = ZipFilenameFormat.MANGA_CHAPTER.formatFilename("Shadow/Blade: Rise?", "3")
         assertEquals("Shadow_Blade_Rise_Chapter_03.zip", name)
     }
+
+    @Test
+    fun `parseDetectionResult handles ManhwaHub webtoon chapter URLs and titles`() {
+        val rawJs = """
+            {
+              "title": "Solo Leveling Chapter 12 - ManhwaHub",
+              "h1": "Chapter 12",
+              "mangaName": "",
+              "chapterName": "Chapter 12",
+              "images": [
+                {"url": "https://img.manhwahub.to/solo-leveling/12/01.webp", "width": 800, "height": 1400, "alt": ""},
+                {"url": "https://img.manhwahub.to/solo-leveling/12/02.webp", "width": 800, "height": 1400, "alt": ""}
+              ],
+              "excludedCount": 2
+            }
+        """.trimIndent()
+
+        val result = ChapterPageDetector.parseDetectionResult(
+            rawJsResult = rawJs,
+            pageUrl = "https://manhwahub.to/webtoon/solo-leveling/chapter-12",
+            filenameFormat = ZipFilenameFormat.MANGA_CHAPTER
+        )
+
+        assertNull(result.errorMessage)
+        assertEquals("Solo Leveling", result.mangaTitle)
+        assertEquals("12", result.chapterNumber)
+        assertEquals("Solo_Leveling_Chapter_12.zip", result.suggestedZipName)
+        assertEquals(2, result.pages.size)
+    }
+
+    @Test
+    fun `mangaSource toggles between Thunder Scans and ManhwaHub`() {
+        assertEquals(com.example.ui.browser.MangaSource.MANHWA_HUB, com.example.ui.browser.MangaSource.THUNDER_SCANS.next())
+        assertEquals(com.example.ui.browser.MangaSource.THUNDER_SCANS, com.example.ui.browser.MangaSource.MANHWA_HUB.next())
+        assertEquals(
+            com.example.ui.browser.MangaSource.MANHWA_HUB,
+            com.example.ui.browser.MangaSource.detectFromUrl("https://manhwahub.to/webtoon/test/chapter-1")
+        )
+        assertEquals(
+            com.example.ui.browser.MangaSource.THUNDER_SCANS,
+            com.example.ui.browser.MangaSource.detectFromUrl("https://en-thunderscans.com/manga/test/")
+        )
+    }
 }

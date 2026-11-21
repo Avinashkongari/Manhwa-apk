@@ -19,9 +19,43 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+enum class MangaSource(
+    val displayName: String,
+    val shortLabel: String,
+    val homeUrl: String,
+    val hostKeyword: String
+) {
+    THUNDER_SCANS(
+        displayName = "Thunder Scans",
+        shortLabel = "Thunder",
+        homeUrl = "https://en-thunderscans.com/",
+        hostKeyword = "thunderscans"
+    ),
+    MANHWA_HUB(
+        displayName = "ManhwaHub",
+        shortLabel = "ManhwaHub",
+        homeUrl = "https://manhwahub.to/",
+        hostKeyword = "manhwahub"
+    );
+
+    fun next(): MangaSource = when (this) {
+        THUNDER_SCANS -> MANHWA_HUB
+        MANHWA_HUB -> THUNDER_SCANS
+    }
+
+    companion object {
+        fun detectFromUrl(url: String?): MangaSource? {
+            if (url.isNullOrBlank()) return null
+            val low = url.lowercase()
+            return entries.firstOrNull { low.contains(it.hostKeyword) }
+        }
+    }
+}
+
 data class BrowserUiState(
+    val activeSource: MangaSource = MangaSource.THUNDER_SCANS,
     val currentUrl: String = HOME_URL,
-    val pageTitle: String = "Thunder Scans",
+    val pageTitle: String = MangaSource.THUNDER_SCANS.displayName,
     val loadingProgress: Int = 0,
     val isLoading: Boolean = true,
     val canGoBack: Boolean = false,
@@ -37,6 +71,7 @@ data class BrowserUiState(
 ) {
     companion object {
         const val HOME_URL = "https://en-thunderscans.com/"
+        const val MANHWA_HUB_URL = "https://manhwahub.to/"
     }
 }
 
@@ -53,8 +88,10 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     val uiState: StateFlow<BrowserUiState> = _uiState.asStateFlow()
 
     fun onPageStarted(url: String?, canBack: Boolean, canForward: Boolean) {
+        val detectedSource = MangaSource.detectFromUrl(url)
         _uiState.update {
             it.copy(
+                activeSource = detectedSource ?: it.activeSource,
                 currentUrl = url ?: it.currentUrl,
                 isLoading = true,
                 networkError = null,
@@ -65,8 +102,10 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun onPageFinished(url: String?, title: String?, canBack: Boolean, canForward: Boolean) {
+        val detectedSource = MangaSource.detectFromUrl(url)
         _uiState.update {
             it.copy(
+                activeSource = detectedSource ?: it.activeSource,
                 currentUrl = url ?: it.currentUrl,
                 pageTitle = title?.takeIf { t -> t.isNotBlank() } ?: it.pageTitle,
                 isLoading = false,
@@ -75,6 +114,22 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                 canGoForward = canForward
             )
         }
+    }
+
+    fun switchSource(webView: WebView?) {
+        val nextSource = _uiState.value.activeSource.next()
+        _uiState.update {
+            it.copy(
+                activeSource = nextSource,
+                currentUrl = nextSource.homeUrl,
+                pageTitle = nextSource.displayName,
+                isLoading = true,
+                loadingProgress = 10,
+                networkError = null
+            )
+        }
+        webView?.stopLoading()
+        webView?.loadUrl(nextSource.homeUrl)
     }
 
     fun onProgressChanged(progress: Int, canBack: Boolean, canForward: Boolean) {
@@ -99,11 +154,12 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun onMainFrameError(description: String?) {
+        val sourceName = _uiState.value.activeSource.displayName
         val message = when {
-            description.isNullOrBlank() -> "Unable to reach Thunder Scans. Check your internet connection."
+            description.isNullOrBlank() -> "Unable to reach $sourceName. Check your internet connection."
             description.contains("ERR_INTERNET_DISCONNECTED", ignoreCase = true) ||
                 description.contains("ERR_NAME_NOT_RESOLVED", ignoreCase = true) ->
-                "No internet connection or website unreachable. Check your connection and retry."
+                "No internet connection or $sourceName is unreachable. Check your connection and retry."
             description.contains("ERR_CONNECTION_TIMED_OUT", ignoreCase = true) ->
                 "Connection timed out while loading the page."
             else -> "Page load error: $description"

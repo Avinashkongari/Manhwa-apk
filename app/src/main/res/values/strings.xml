@@ -5,6 +5,8 @@
     <string name="nav_history">History</string>
     <string name="nav_settings">Settings</string>
     <string name="browser_home_url">https://en-thunderscans.com/</string>
+    <string name="browser_manhwahub_url">https://manhwahub.to/</string>
+    <string name="action_switch_source">Switch Source</string>
     <string name="action_back">Back</string>
     <string name="action_forward">Forward</string>
     <string name="action_refresh">Refresh</string>
